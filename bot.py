@@ -1,13 +1,12 @@
 import asyncio
-import sys
 from datetime import datetime
 from pyrogram import Client
 from pyrogram.enums import ParseMode
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from config import *
 from plugins import web_server
-import pyrogram.utils
 from aiohttp import web
+import pyrogram.utils
 
 pyrogram.utils.MIN_CHANNEL_ID = -1002449417637
 
@@ -27,43 +26,39 @@ class Bot(Client):
         )
         self.LOGGER = LOGGER
 
-    async def start(self, *args, **kwargs):
+    async def start(self):
         await super().start()
-        usr_bot_me = await self.get_me()
+        me = await self.get_me()
         self.uptime = datetime.now()
+        self.username = me.username
 
-        # Notify bot restart
+        # Restart notification
         try:
             await self.send_photo(
-                    chat_id=DATABASE_CHANNEL,
-                    photo="https://ibb.co/DH3N4Lyr",
-                    caption=(
-                        "**I ʀᴇsᴛᴀʀᴛᴇᴅ ᴀɢᴀɪɴ !**"),
-                    reply_markup=InlineKeyboardMarkup(
-                        [[InlineKeyboardButton("ᴜᴘᴅᴀᴛᴇs", url="https://t.me/RexBots_Official")]]
-                    )
+                chat_id=DATABASE_CHANNEL,
+                photo="https://i.ibb.co/DH3N4Lyr/image.jpg",
+                caption="**I ʀᴇsᴛᴀʀᴛᴇᴅ ᴀɢᴀɪɴ !**",
+                reply_markup=InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("ᴜᴘᴅᴀᴛᴇs", url="https://t.me/RexBots_Official")]]
                 )
+            )
         except Exception as e:
-            self.LOGGER(__name__).warning(f"Failed to send bot start message in {DATABASE_CHANNEL}: {e}")
+            self.LOGGER(__name__).warning(f"Restart message failed: {e}")
 
         self.set_parse_mode(ParseMode.HTML)
-        self.LOGGER(__name__).info("Wew...Bot is running...⚡  Credit:- @RexBots_Official")
-        self.LOGGER(__name__).info(f"{name}")
-        self.username = usr_bot_me.username
+        self.LOGGER(__name__).info("Bot started successfully")
+        self.LOGGER(__name__).info(name)
 
-        # Web-response
+        # Start aiohttp web server
         try:
-            app = web.AppRunner(await web_server())
-            await app.setup()
-            bind_address = "0.0.0.0"
-            await web.TCPSite(app, bind_address, PORT).start()
-            self.LOGGER(__name__).info(f"Web server started on {bind_address}:{PORT}")
+            runner = web.AppRunner(await web_server())
+            await runner.setup()
+            site = web.TCPSite(runner, "0.0.0.0", int(PORT))
+            await site.start()
+            self.LOGGER(__name__).info(f"Web server running on port {PORT}")
         except Exception as e:
-            self.LOGGER(__name__).error(f"Failed to start web server: {e}")
+            self.LOGGER(__name__).error(f"Web server error: {e}")
 
     async def stop(self, *args):
         await super().stop()
-        self.LOGGER(__name__).info("Bot stopped...")
-        
-if __name__ == "__main__":
-    Bot().run()
+        self.LOGGER(__name__).info("Bot stopped")
